@@ -44,7 +44,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     ui->tableView_formations->setModel(formation.afficher());
     ui->tableView_formateur->setModel(formateur.afficher());
-    populateFormateurComboBox();
+
     displaystat();
     markFormationDates();
     connect(ui->calendarWidget, &QCalendarWidget::selectionChanged, this, &MainWindow::on_calendarWidget_selectionChanged);
@@ -243,6 +243,7 @@ void MainWindow::on_ajouter_fr_clicked()
 
         // Afficher un message en fonction du résultat de l'opération
         if (success) {
+            populateFormateurComboBox();
             QMessageBox::information(this, "Succès", "Le formateur a été ajouté avec succès.");
             // Optionnel : Effacer les champs après ajout
             ui->lineEdit_nom->clear();
@@ -742,10 +743,10 @@ void MainWindow::on_dateEdit_recherche_dateChanged(const QDate &date)
 
 void MainWindow::on_pushButton_clicked()
 {
-     ui->stackedWidget->setCurrentIndex(0);
+     ui->stackedWidget->setCurrentIndex(1);
 }
 
 void MainWindow::on_pushButton_2_clicked()
 {
-ui->stackedWidget->setCurrentIndex(1);
+ui->stackedWidget->setCurrentIndex(0);
 }
