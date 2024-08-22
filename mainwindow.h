@@ -66,6 +66,8 @@ private slots:
     void on_pushButton_clicked();
 
     void on_pushButton_2_clicked();
+    void populateSpecialiteComboBox();
+    void displaystatfr();
 
 private:
     Ui::MainWindow *ui;

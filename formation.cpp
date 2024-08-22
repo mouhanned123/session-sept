@@ -135,24 +135,40 @@ bool Formation::modifier(int id) {
     return query.exec();
 }
 
-QSqlQueryModel* Formation::rechercherParNom(QString titre) {
+QSqlQueryModel* Formation::rechercherParNom(QString recherche) {
     QSqlQueryModel* model = new QSqlQueryModel();
-    QSqlQuery query;
-    query.prepare("SELECT * FROM formation WHERE titre LIKE :titre");
-    query.bindValue(":titre", "%" + titre + "%");
+        QSqlQuery query;
 
-    if (query.exec()) {
-        model->setQuery(query);
+        // Préparation de la requête pour rechercher par titre ou description
+        query.prepare("SELECT * FROM formation WHERE titre LIKE :recherche OR description LIKE :recherche");
+        query.bindValue(":recherche", "%" + recherche + "%");
+
+        if (query.exec()) {
+            model->setQuery(query);
+        } else {
+            qDebug() << "Failed to execute search query:" << query.lastError().text();
+        }
+
+        return model;
     }
 
-    return model;
-}
 
-QSqlQueryModel* Formation::tri(const QString& columnName, Qt::SortOrder order) {
+
+QSqlQueryModel* Formation::Tri(QString cls, QString champ) {
     QSqlQueryModel* model = new QSqlQueryModel();
-    QString sortOrder = (order == Qt::AscendingOrder) ? "ASC" : "DESC";
-    QString queryStr = "SELECT * FROM formation ORDER BY " + columnName + " " + sortOrder;
-    model->setQuery(queryStr);
+    QString queryString = "SELECT * FROM formation ORDER BY " + champ + " " + cls;
+    QSqlQuery query;
+    query.prepare(queryString);
+    query.exec();
+    model->setQuery(query);
+    model->setHeaderData(0, Qt::Horizontal, QObject::tr("ID_FORMATION"));
+    model->setHeaderData(1, Qt::Horizontal, QObject::tr("TITRE"));
+    model->setHeaderData(2, Qt::Horizontal, QObject::tr("DESCRIPTION"));
+    model->setHeaderData(3, Qt::Horizontal, QObject::tr("DATE_DE_DEBUT"));
+    model->setHeaderData(4, Qt::Horizontal, QObject::tr("DUREE"));
+    model->setHeaderData(5, Qt::Horizontal, QObject::tr("JOURNEE"));
+    model->setHeaderData(6, Qt::Horizontal, QObject::tr("ID_FORMATEUR"));
+
     return model;
 }
 

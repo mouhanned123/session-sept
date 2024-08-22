@@ -40,7 +40,7 @@ public:
     bool supprimer(int id);
     bool modifier(int id);
     static QSqlQueryModel* rechercherParNom( QString nom);
-    QSqlQueryModel *tri(const QString &columnName, Qt::SortOrder order);
+    static QSqlQueryModel* Tri(QString cls, QString champ);
     QBarSeries* getStatFormateurs();
     static QSqlQueryModel* rechercherParJournee(QDate journee);
 

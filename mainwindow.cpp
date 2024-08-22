@@ -44,17 +44,32 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     ui->tableView_formations->setModel(formation.afficher());
     ui->tableView_formateur->setModel(formateur.afficher());
+    populateSpecialiteComboBox();
+    populateFormateurComboBox();
 
     displaystat();
+    displaystatfr();
     markFormationDates();
     connect(ui->calendarWidget, &QCalendarWidget::selectionChanged, this, &MainWindow::on_calendarWidget_selectionChanged);
-    connect(ui->dateEdit_jour, &QDateEdit::dateChanged, this, &MainWindow::on_dateEdit_recherche_dateChanged);
+
 
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+void MainWindow::populateSpecialiteComboBox() {
+    ui->comboBox_specialite->addItem("Developpement Web");
+    ui->comboBox_specialite->addItem("Data Science");
+    ui->comboBox_specialite->addItem("Reseaux et Securite");
+    ui->comboBox_specialite->addItem("Gestion de projet");
+    ui->comboBox_specialite->addItem("Intelligence Artificielle");
+    ui->comboBox_specialite->addItem("Cloud Computing");
+    ui->comboBox_specialite->addItem("Marketing Digital");
+    ui->comboBox_specialite->addItem("Design et UX/UI");
+    ui->comboBox_specialite->addItem("Ressources Humaines");
+    ui->comboBox_specialite->addItem("Finance et Comptabilite");
 }
 
 
@@ -98,6 +113,7 @@ void MainWindow::on_ajouter_f_clicked()
 
         // Afficher un message en fonction du résultat de l'opération
         if (success) {
+
             markFormationDates();
             displaystat();
             sendReminderEmails();
@@ -172,6 +188,7 @@ void MainWindow::on_modfi_f_clicked()
         bool success = formation.modifier(id);
 
         if (success) {
+            populateSpecialiteComboBox();
             markFormationDates(); // Si cette méthode est nécessaire
             displaystat(); // Si cette méthode est nécessaire
             // Mettre à jour l'affichage des formations
@@ -185,6 +202,7 @@ void MainWindow::on_modfi_f_clicked()
             ui->timeEdit_date_de_debut->setTime(QTime::currentTime()); // Réinitialiser le QTime
             ui->dateEdit_jour->setDate(QDate::currentDate());
             ui->comboBox_formateur->setCurrentIndex(-1); // Réinitialiser le QComboBox
+
 
             QMessageBox::information(this, "Modification réussie", "Formation modifiée avec succès.");
         } else {
@@ -226,7 +244,7 @@ void MainWindow::on_ajouter_fr_clicked()
         QString nom = ui->lineEdit_nom->text();
         QString email = ui->lineEdit_mail->text();
         QString telephone = ui->lineEdit_tel->text();
-        QString specialite = ui->lineEdit_specalite->text();
+        QString specialite = ui->comboBox_specialite->currentText();;
         int experience = ui->spinBox_exp->value();
 
         // Vérifier si tous les champs sont remplis
@@ -243,16 +261,18 @@ void MainWindow::on_ajouter_fr_clicked()
 
         // Afficher un message en fonction du résultat de l'opération
         if (success) {
-            populateFormateurComboBox();
+
+
             QMessageBox::information(this, "Succès", "Le formateur a été ajouté avec succès.");
             // Optionnel : Effacer les champs après ajout
             ui->lineEdit_nom->clear();
             ui->lineEdit_mail->clear();
             ui->lineEdit_tel->clear();
-            ui->lineEdit_specalite->clear();
+            ui->comboBox_specialite->clear();
             ui->spinBox_exp->setValue(0);
             // Optionnel : Mettre à jour l'affichage des formateurs
             ui->tableView_formateur->setModel(formateur.afficher());
+            populateFormateurComboBox();
         } else {
             QMessageBox::critical(this, "Erreur", "Une erreur est survenue lors de l'ajout du formateur.");
         }
@@ -265,7 +285,7 @@ void MainWindow::on_modfi_fr_clicked()
         QString nom = ui->lineEdit_nom->text();
         QString email = ui->lineEdit_mail->text();
         QString telephone = ui->lineEdit_tel->text();
-        QString specialite = ui->lineEdit_specalite->text();
+        QString specialite = ui->comboBox_specialite->currentText();
         int experience = ui->spinBox_exp->value();
 
         // Validation des champs
@@ -287,8 +307,9 @@ void MainWindow::on_modfi_fr_clicked()
             ui->lineEdit_nom->clear();
             ui->lineEdit_mail->clear();
             ui->lineEdit_tel->clear();
-            ui->lineEdit_specalite->clear();
+            ui->comboBox_specialite->clear();
             ui->spinBox_exp->setValue(0);
+            populateSpecialiteComboBox();
 
             QMessageBox::information(nullptr, QObject::tr("Modifier un formateur"),
                                      QObject::tr("Formateur modifié avec succès.\n"
@@ -338,7 +359,7 @@ void MainWindow::on_tableView_formateur_doubleClicked(const QModelIndex &index)
        ui->lineEdit_nom->setText(nom);
        ui->lineEdit_mail->setText(email);
        ui->lineEdit_tel->setText(telephone);
-       ui->lineEdit_specalite->setText(specialite);
+       ui->comboBox_specialite->setCurrentText(specialite);
        ui->spinBox_exp->setValue(experience);
 }
 
@@ -366,7 +387,7 @@ void MainWindow::on_lineEdit_textChanged(QString text)
 void MainWindow::on_tri_fr_clicked()
 {
     // Call the sorting method in your Fournisseur class
-        QSqlQueryModel *sortedModel = formateur.tri("nom", Qt::AscendingOrder);
+        QSqlQueryModel *sortedModel = formateur.tri("terme", Qt::AscendingOrder);
 
         // Set the sorted model to the table view
         ui->tableView_formateur->setModel(sortedModel);
@@ -670,43 +691,57 @@ void MainWindow::on_calendarWidget_selectionChanged()
 void MainWindow::sendReminderEmails() {
     QDate tomorrow = QDate::currentDate().addDays(1);
 
-        // Préparer la requête pour récupérer les formations dont la date de début est demain
-        QSqlQuery query;
-        query.prepare("SELECT f.titre, f.date_de_debut, f.journee, f.id_formateur, formateur.nom, formateur.email "
-                      "FROM formation f "
-                      "JOIN formateur ON f.id_formateur = formateur.id "
-                      "WHERE f.journee = :tomorrow");
-        query.bindValue(":tomorrow", tomorrow);
+    // Préparer la requête pour récupérer les formations dont la journée est demain
+    QSqlQuery query;
+    query.prepare("SELECT f.titre, f.date_de_debut, f.duree, f.journee, f.id_formateur, formateur.nom, formateur.email "
+                  "FROM formation f "
+                  "JOIN formateur ON f.id_formateur = formateur.id "
+                  "WHERE f.journee = :tomorrow");
+    query.bindValue(":tomorrow", tomorrow);
 
-        if (!query.exec()) {
-            qDebug() << "Failed to retrieve formations:" << query.lastError().text();
-            return;
-        }
+    if (!query.exec()) {
+        qDebug() << "Failed to retrieve formations:" << query.lastError().text();
+        return;
+    }
 
-        // Envoyer un e-mail à chaque formateur
-        while (query.next()) {
-            QString titre = query.value("titre").toString();
-            QString formateurNom = query.value("nom").toString();
-            QString formateurEmail = query.value("email").toString();
+    // Envoyer un e-mail à chaque formateur
+    while (query.next()) {
+        QString titre = query.value("titre").toString();
+        QString formateurNom = query.value("nom").toString();
+        QString formateurEmail = query.value("email").toString();
 
-            // Créer le contenu de l'e-mail
-            QString subject = QString("Rappel: Formation '%1' Demain").arg(titre);
-            QString body = QString("Bonjour %1,\n\n"
-                                   "Ceci est un rappel que vous avez une formation '%2' prévue pour demain.\n"
-                                   "Date de début : %3\n"
-                                   "Date de fin : %4\n\n"
-                                   "Merci,\n"
-                                   "L'équipe de gestion des formations.")
-                                   .arg(formateurNom)
-                                   .arg(titre)
-                                   .arg(query.value("date_de_debut").toDate().toString("dd/MM/yyyy"))
-                                   .arg(query.value("date_de_fin").toDate().toString("dd/MM/yyyy"));
+        // Récupérer et formater les champs nécessaires
+        QDate journee = query.value("journee").toDate();
+        QString journeeStr = journee.toString("dd/MM/yyyy");
 
-            // Configurer et envoyer l'e-mail via un serveur SMTP
-            Smtp *smtp = new Smtp("jery.wizin@gmail.com", "tqyb pqwu pzzl pchx", "smtp.gmail.com", 465);
-            smtp->sendMail("jery.wizin@gmail.com", formateurEmail, subject, body);
-        }
+        QString dateDeDebut = query.value("date_de_debut").toString();
+
+
+
+
+        QString duree = query.value("duree").toString();
+
+        // Créer le contenu de l'e-mail
+        QString subject = QString("Rappel: Formation '%1' Demain").arg(titre);
+        QString body = QString("Bonjour %1,\n\n"
+                               "Ceci est un rappel que vous avez une formation '%2' prévue pour demain.\n"
+                               "Journée : %3\n"
+                               "Heure de début : %4\n"
+                               "Durée : %5\n\n"
+                               "Merci,\n"
+                               "L'équipe de gestion des formations.")
+                               .arg(formateurNom)
+                               .arg(titre)
+                               .arg(journeeStr)  // Affiche la journée (date)
+                               .arg(dateDeDebut)  // Affiche uniquement l'heure
+                               .arg(duree);
+
+        // Configurer et envoyer l'e-mail via un serveur SMTP
+        Smtp *smtp = new Smtp("jery.wizin@gmail.com", "tqyb pqwu pzzl pchx", "smtp.gmail.com", 465);
+        smtp->sendMail("jery.wizin@gmail.com", formateurEmail, subject, body);
+    }
 }
+
 
 
 
@@ -722,11 +757,22 @@ void MainWindow::sendReminderEmails() {
 
 void MainWindow::on_tri_f_clicked()
 {
-    // Call the sorting method in your Fournisseur class
-        QSqlQueryModel *sortedModel = formation.tri("journee", Qt::AscendingOrder);
+    QString champ = "titre";  // Par défaut, on trie par titre
+       QString order = "asc";    // Par défaut, on trie de manière ascendante
 
-        // Set the sorted model to the table view
-        ui->tableView_formations->setModel(sortedModel);
+       if (ui->comboBoxsortchamp->currentText().compare("Journee") == 0) {
+           champ = "journee";
+       } else if (ui->comboBoxsortchamp->currentText().compare("Titre") == 0) {
+           champ = "titre";
+       }
+
+       if (ui->comboBox_order->currentText().compare("Descendant") == 0) {
+           order = "desc";
+       }
+       qDebug() << order ;
+        qDebug() << champ ;
+
+       ui->tableView_formations->setModel(formation.Tri(order, champ));
 }
 
 void MainWindow::on_dateEdit_recherche_dateChanged(const QDate &date)
@@ -750,3 +796,58 @@ void MainWindow::on_pushButton_2_clicked()
 {
 ui->stackedWidget->setCurrentIndex(0);
 }
+
+void MainWindow::displaystatfr() {
+    // Create a QVBoxLayout for ui->frameF if it doesn't have a layout
+    if (!ui->frameFR->layout()) {
+        QVBoxLayout *frameLayout = new QVBoxLayout(ui->frameFR);
+        ui->frameFR->setLayout(frameLayout);
+    }
+
+    // Clear any existing widgets in the QFrame
+    QLayoutItem *item;
+    while ((item = ui->frameFR->layout()->takeAt(0)) != nullptr) {
+        if (item->widget()) {
+            delete item->widget();
+        }
+        delete item;
+    }
+
+    // Retrieve the data to be displayed in the bar chart
+    Formateur f;
+    QBarSeries *series = f.getStatSpecialites();
+
+    if (!series) {
+        qDebug() << "Failed to retrieve statistics data from the database.";
+        return;
+    }
+
+    // Create the bar chart
+    QChart *chart = new QChart();
+    chart->addSeries(series);
+    chart->setTitle("Nombre de formateurs par spécialité");
+    chart->setAnimationOptions(QChart::SeriesAnimations);
+
+    // Create the category axis (X-axis)
+    QBarCategoryAxis *axisX = new QBarCategoryAxis;
+    axisX->setTitleText("Spécialité");
+    chart->addAxis(axisX, Qt::AlignBottom);
+    series->attachAxis(axisX);
+
+    // Create the value axis (Y-axis)
+    QValueAxis *axisY = new QValueAxis;
+    axisY->setTitleText("Nombre de formateurs");
+    chart->addAxis(axisY, Qt::AlignLeft);
+    series->attachAxis(axisY);
+
+    // Create the chart view
+    QChartView *chartView = new QChartView(chart);
+    chartView->setRenderHint(QPainter::Antialiasing, true);
+
+    // Adjust the size of the chart view
+    chartView->setFixedSize(721, 281);
+
+    // Add the chart view to the layout of the parent widget
+    ui->frameFR->layout()->addWidget(chartView);
+}
+

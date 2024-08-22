@@ -3,6 +3,11 @@
 
 #include <QString>
 #include <QSqlQueryModel>
+#include <QtCharts/QBarSeries>
+#include <QtCharts/QBarSet>
+#include <QtCharts/QChartView>
+#include <QSqlError>
+using namespace QtCharts;
 
 class Formateur {
 public:
@@ -33,6 +38,7 @@ public:
     bool modifier(int id);
     static QSqlQueryModel* rechercherParNom( QString nom);
     QSqlQueryModel *tri(const QString &columnName, Qt::SortOrder order);
+    QBarSeries* getStatSpecialites();
 
 
 private:

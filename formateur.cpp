@@ -3,6 +3,7 @@
 #include <QVariant>
 #include <QDebug>
 
+
 // Constructeurs
 Formateur::Formateur() {}
 
@@ -113,14 +114,18 @@ bool Formateur::modifier(int id){
     return query.exec();
 }
 
-QSqlQueryModel* Formateur::rechercherParNom( QString nom) {
+QSqlQueryModel* Formateur::rechercherParNom(QString terme) {
     QSqlQueryModel* model = new QSqlQueryModel();
     QSqlQuery query;
-    query.prepare("SELECT * FROM formateur WHERE nom LIKE :nom");
-    query.bindValue(":nom", "%" + nom + "%");
+
+    // Préparer la requête pour rechercher par nom, email ou numéro de téléphone
+    query.prepare("SELECT * FROM formateur WHERE nom LIKE :terme OR email LIKE :terme OR telephone LIKE :terme");
+    query.bindValue(":terme", "%" + terme + "%");
 
     if (query.exec()) {
         model->setQuery(query);
+    } else {
+        qDebug() << "Failed to execute search query:" << query.lastError().text();
     }
 
     return model;
@@ -132,4 +137,25 @@ QSqlQueryModel* Formateur::tri(const QString& columnName, Qt::SortOrder order)
     QString queryStr = "SELECT * FROM formateur ORDER BY " + columnName + " " + sortOrder;
     model->setQuery(queryStr);
     return model;
+}
+QBarSeries* Formateur::getStatSpecialites() {
+    QSqlQuery query;
+    query.prepare("SELECT specialite, COUNT(*) FROM formateur GROUP BY specialite");
+
+    if (!query.exec()) {
+        qDebug() << "Failed to retrieve statistics data from the database:" << query.lastError();
+        return nullptr;
+    }
+
+    QBarSeries *series = new QBarSeries();
+
+    while (query.next()) {
+        QString specialite = query.value(0).toString();
+        int count = query.value(1).toInt();
+
+        QBarSet *set = new QBarSet(specialite);
+        *set << count;
+        series->append(set);
+    }
+    return series;
 }
